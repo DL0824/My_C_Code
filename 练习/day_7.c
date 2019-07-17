@@ -16,7 +16,7 @@ int MyLen(char* str)
 	return n;
 }
 
-int fab1(int n)
+int fab1(int  n)
 {
 	if (n <= 2)
 		return 1;
