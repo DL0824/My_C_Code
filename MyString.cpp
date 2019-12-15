@@ -8,6 +8,8 @@ namespace my
     class string 
     {
         public:
+            typedef char* iterator;
+        public:
             string(const char* str="")
             {
                 if(str==NULL)
@@ -199,6 +201,16 @@ namespace my
                    n=_size;
                string tmp(_str+pos,_str+pos+n);
                return tmp;
+           }
+
+           iterator begin()
+           {
+               return _str;
+           }
+
+           iterator end()
+           {
+               return _str+_size;
            }
         private:
             int _size;
