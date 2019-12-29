@@ -88,7 +88,8 @@ int main()
 
 
 
-	for (i = 0; i<files; i++){ //循环显示图片
+	for (i = 0; i<files; i++)
+    { //循环显示图片
 
 
 
@@ -136,7 +137,8 @@ int main()
 
 **/
 
-void bmp_show(const char *bmp_name){
+void bmp_show(const char *bmp_name)
+{
 
 
 
@@ -146,7 +148,8 @@ void bmp_show(const char *bmp_name){
 
 
 
-	if (fd_lcd == -1){
+	if (fd_lcd == -1)
+    {
 
 		printf("open lcd err\n");
 
@@ -176,7 +179,8 @@ void bmp_show(const char *bmp_name){
 
 
 
-	if (fp == (void*)-1){
+	if (fp == (void*)-1)
+    {
 
 		printf("mmap err\n");
 
@@ -192,7 +196,8 @@ void bmp_show(const char *bmp_name){
 
 
 
-	if (fd_bmp == -1){
+	if (fd_bmp == -1)
+    {
 
 		printf("open bmp err\n");
 
@@ -224,9 +229,11 @@ void bmp_show(const char *bmp_name){
 
 
 
-	for (j = 0; j<480; j++){
+	for (j = 0; j<480; j++)
+    {
 
-		for (i = 0; i<800; i++){
+		for (i = 0; i<800; i++)
+        {
 
 			// fp[i*4+800*4*j] = bmp_buf[i*3+800*3*(479-j)]; //B
 
@@ -290,8 +297,8 @@ void bmp_show(const char *bmp_name){
 
 **/
 
-void ** dir_seek(char * seek_dir, int *files, char * seek_str){
-
+void ** dir_seek(char * seek_dir, int *files, char * seek_str)
+{
 
 
 
@@ -300,7 +307,8 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str){
 
 	DIR * dirp = opendir(seek_dir);//打开要检索的文件夹（目录）
 
-	if (dirp == NULL){
+	if (dirp == NULL)
+    {
 
 		puts("open dir err");
 
@@ -340,13 +348,15 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str){
 
 
 
-	while (1){
+	while (1)
+    {
 
 		//一次while循环读取一次
 
 		filep = readdir(dirp);//循环读取打开的目录（文件夹），直到读完跳出
 
-		if (filep == NULL){
+		if (filep == NULL)
+        {
 
 			break;
 
@@ -356,13 +366,15 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str){
 
 		char tmp[200] = { 0 };
 
-		if (strstr(filep->d_name, seek_str) != NULL){
+		if (strstr(filep->d_name, seek_str) != NULL)
+        {
 
 			//seek_str(就是".bmp"，bmp格式图片名字的后缀)
 
 			//strstr返回第一次在d_name中出现seek_str的位置，此处的作用主要是用来检索文件名中是否出现.bmp后缀
 
-			if (itms >= n){
+			if (itms >= n)
+            {
 
 				n += 5;//当检索的文件数量大于5个，先把n重新赋值，每次多加5个即可，
 
