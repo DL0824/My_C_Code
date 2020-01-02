@@ -1,33 +1,20 @@
 /**
-
 文件名: bmp_show.c
-
 描述：把指定目录下的所有 BMP 图片 自动循环显示到屏幕
-
 仅支持 800*480 分辨率的图片
-
-
-
 **/
 
 
 
 #include <stdio.h>
-
+#include <linux/input.h>
 #include <stdlib.h>
-
 #include <sys/types.h>
-
 #include <sys/stat.h>
-
 #include <unistd.h>
-
 #include <fcntl.h>
-
 #include <sys/mman.h>
-
 #include <string.h>
-
 #include <dirent.h>
 
 
@@ -41,9 +28,100 @@ void bmp_show(const char *bmp_name);
 void ** dir_seek(char * seek_dir, int *files, char * seek_str);
 
 
+void get_xy(int *x,int *y)
+{
+	//打开触摸设备
+	int fd_touch=open("/dev/input/event0",O_RDONLY);
+	if(fd_touch == -1){
+		printf("open touch screen err\n");
+		return;
+	}
+	struct input_event tc;//读取触摸信息结构体
+	
+	/*struct input_event {
+		struct timeval time; //按键时间
+		__u16 type; //类型，在下面有定义
+		__u16 code; //要模拟成什么按键
+		__s32 value;//是按下还是释放
+		};*/
+	/*type: 
+	EV_KEY,键盘 0x1
+	EV_REL,相对坐标  0x2
+	EV_ABS,绝对坐标  0x3
+	value：
+	事件的值.如果事件的类型代码是EV_KEY,
+	当按键按下时值为1,松开时值为0;
+	如果事件的类型代码是EV_ REL,value的正数值和负数值分别代表两个不同方向的值.*/
+	
+	//puts( " will read touch " );
+	while(1)
+	{
+		read(fd_touch,&tc,sizeof(tc));//阻塞读取,读不到一直等待
+		if(tc.type==3)//EV_ABS 绝对坐标
+		{
+			//触摸设备和显示设备不同，一个是800*480，一个是1024*600
+			//这里的0，1代表了一个绝对的方向并不是具体的什么坐标了
+			if(tc.code==0)
+			{
+				*x=tc.value*800/1024;//保存x触摸值
+			}
+			else if(tc.code==1)
+			{
+				*y=tc.value*800/1024;//保存y触摸值
+			}
+		}
+
+		if((tc.code==330)&&(tc.value==0))
+		{//在源码宏定义中表示按键，这里的意思是遇到案件并且松开(value==0)
+			break;
+		}
+		
+	}
+	//printf("x=%d y=%d\n",*x,*y);
+	close(fd_touch);
+}
 
 
+void delay(int time)//延时函数
+{
+	for(int i=0;i<time;++i)
+	{
+		for(int j=0;j<100;++j)
+		{
+			;//什么都不干，就是一个简单的延时
+		}
+	}
+}
 
+void xhshow(char(*pic_path)[100],int files)
+{
+	int i;
+	for (i = 0; i<files; i++){ //循环显示图片
+		bmp_show(pic_path[i]);
+		//sleep(1);
+		delay(1);
+	}
+}
+
+void cmshow(char(*pic_path)[100],int files)
+{
+	int i=0;
+	int x,y;
+
+	puts( " cmshow " );
+
+	while(1)
+	{
+		bmp_show(pic_path[i]);//先显示第一张图片
+		get_xy(&x,&y);
+		
+		if( x < 200 && --i < 0 ){
+			i = files -1; //最后一张的下标
+		}else if( x > 600 && ++i == files){
+			i = 0; //第一张的下标
+		}
+	}
+}
 //宏定义区
 
 #define   SEEK_DIR "./bmp"//储存bmp格式图片文件的目录，必须给出路径
@@ -71,44 +149,40 @@ int main()
 {
 
 	char(*pic_path)[100]; // 数组指针 指向申请的 字符串数组首地址--》保存图片路径
-
 	int files; //BMP 文件的个数
-
-
-
+	
 	pic_path = (char(*)[100])dir_seek(SEEK_DIR, &files, ".bmp");
-
 	if (pic_path == NULL)
-
 		return 1;
-
-
-
-	int i = 0;
-
-
-
-	for (i = 0; i<files; i++)
-    { //循环显示图片
-
-
-
-		bmp_show(pic_path[i]);
-
-
-
-
-
-		sleep(1);
-
-
-
-
-
+	//int i = 0;
+	int n=1;
+	int choice;
+	while(n)
+	{
+		printf("1.循环播放       2.触摸显示     3.退出\n");
+		printf("please enter your choice:");
+		scanf("%d",&choice);
+		switch(choice)
+		{
+			case 1:
+			xhshow(pic_path,files);
+			break;
+			case 2:
+			cmshow(pic_path,files);
+			break;
+			case 3:
+			n=-1;
+			break;
+			default:
+			printf("please enter again!\n");
+			break;
+		}
 	}
-
-
-
+	/*for (i = 0; i<files; i++){ //循环显示图片
+		bmp_show(pic_path[i]);
+		//sleep(1);
+		delay(1);
+	}*/
 	free(pic_path);
 
 
@@ -137,24 +211,12 @@ int main()
 
 **/
 
-void bmp_show(const char *bmp_name)
-{
-
-
-
+void bmp_show(const char *bmp_name){
 	//1. 打开 设备文件（LCD）
-
 	int fd_lcd = open("/dev/fb0", O_RDWR);
-
-
-
-	if (fd_lcd == -1)
-    {
-
+	if (fd_lcd == -1){
 		printf("open lcd err\n");
-
 		return;
-
 	}
 
 
@@ -179,8 +241,7 @@ void bmp_show(const char *bmp_name)
 
 
 
-	if (fp == (void*)-1)
-    {
+	if (fp == (void*)-1){
 
 		printf("mmap err\n");
 
@@ -196,8 +257,7 @@ void bmp_show(const char *bmp_name)
 
 
 
-	if (fd_bmp == -1)
-    {
+	if (fd_bmp == -1){
 
 		printf("open bmp err\n");
 
@@ -226,14 +286,11 @@ void bmp_show(const char *bmp_name)
 	//4. 显示 bmp 颜色数据
 
 	int i, j;
+	
+	//i表示横坐标，j表示纵坐标
+	for (j = 0; j<480; j++){
 
-
-
-	for (j = 0; j<480; j++)
-    {
-
-		for (i = 0; i<800; i++)
-        {
+		for (i = 0; i<800; i++){
 
 			// fp[i*4+800*4*j] = bmp_buf[i*3+800*3*(479-j)]; //B
 
@@ -243,7 +300,7 @@ void bmp_show(const char *bmp_name)
 
 			memcpy(fp + i * 4 + 800 * 4 * j, bmp_buf + i * 3 + 800 * 3 * (479 - j), 3);
 
-			fp[i * 4 + 3 + 800 * 4 * j] = 0;
+			fp[i * 4 + 3 + 800 * 4 * j] = 0;//将透明度置0，因为bmp格式图片没有透明度，其实可以不用管
 
 		}
 
@@ -297,8 +354,8 @@ void bmp_show(const char *bmp_name)
 
 **/
 
-void ** dir_seek(char * seek_dir, int *files, char * seek_str)
-{
+void ** dir_seek(char * seek_dir, int *files, char * seek_str){
+
 
 
 
@@ -307,8 +364,7 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str)
 
 	DIR * dirp = opendir(seek_dir);//打开要检索的文件夹（目录）
 
-	if (dirp == NULL)
-    {
+	if (dirp == NULL){
 
 		puts("open dir err");
 
@@ -348,15 +404,13 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str)
 
 
 
-	while (1)
-    {
+	while (1){
 
 		//一次while循环读取一次
 
 		filep = readdir(dirp);//循环读取打开的目录（文件夹），直到读完跳出
 
-		if (filep == NULL)
-        {
+		if (filep == NULL){
 
 			break;
 
@@ -364,17 +418,16 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str)
 
 
 
+
 		char tmp[200] = { 0 };
 
-		if (strstr(filep->d_name, seek_str) != NULL)
-        {
+		if (strstr(filep->d_name, seek_str) != NULL){
 
 			//seek_str(就是".bmp"，bmp格式图片名字的后缀)
 
 			//strstr返回第一次在d_name中出现seek_str的位置，此处的作用主要是用来检索文件名中是否出现.bmp后缀
 
-			if (itms >= n)
-            {
+			if (itms >= n){
 
 				n += 5;//当检索的文件数量大于5个，先把n重新赋值，每次多加5个即可，
 
@@ -397,13 +450,10 @@ void ** dir_seek(char * seek_dir, int *files, char * seek_str)
 			// printf("-->%s\n",filep->d_name);
 
 		}
-
 	}
-
 	*files = itms;//files作为“出参”，在主函数中充当文件数，用于循环检索用
 
 	closedir(dirp);
-
 
 
 	return (void **)name;//返回值之所以为二级指针，目的是为了防止当需要检索的文件数目大于5个时
