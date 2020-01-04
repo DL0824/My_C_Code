@@ -1,1 +1,2 @@
 git config --global credential.helper store  git免密提交
+mv /var/lib/NetworkManager /var/lib/NetworkManager.bak   解决右上角的wired图标突然没了
