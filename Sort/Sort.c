@@ -84,7 +84,7 @@ void dealQSort(int * arr, int start, int end)
 		flag ? j-- : i++;
 	}
 
-	dealQSort(arr, start, i - 1);
+	dealQSort(arr, start, i - 1); 
 	dealQSort(arr, i + 1, end);
 }
 
@@ -152,7 +152,7 @@ int Partition(int *arr, int start, int end)
 		}
 		while (arr[j]>arr[end - 1])
 		{
-			j++;
+			j--;
 		}
 		swapArgs(arr + i, arr + j);
 		j--;
